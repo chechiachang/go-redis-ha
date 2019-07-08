@@ -9,9 +9,9 @@ import (
 
 func main() {
 	client := redis.NewClient(&redis.Options{
-		Addr:     "redis-redis-ha.default.svc.cluster.local:6379",
-		Password: "12345678", // no password set
-		DB:       0,          // use default DB
+		Addr:     "redis-redis-ha.default.svc.cluster.local:26379", // connect to sentinel, not directly to redis
+		Password: "",                                               // no password set
+		DB:       0,                                                // use default DB
 	})
 
 	for {
@@ -27,5 +27,6 @@ func main() {
 		}
 		fmt.Println("Got: ", val)
 		time.Sleep(1 * time.Second)
+
 	}
 }
