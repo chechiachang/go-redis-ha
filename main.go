@@ -21,7 +21,8 @@ func main() {
 		for {
 			msg, err := pubsub.ReceiveMessage()
 			if err != nil {
-				panic(err)
+				fmt.Println(err.Error())
+				//panic(err)
 			}
 			fmt.Printf("recieved %s", msg)
 		}
@@ -31,7 +32,8 @@ func main() {
 	go func() {
 		for {
 			if err := client.Publish("pticker", time.Now().Second()).Err(); err != nil {
-				panic(err)
+				fmt.Println(err.Error())
+				//panic(err)
 			}
 			time.Sleep(1 * time.Second)
 		}
@@ -40,8 +42,7 @@ func main() {
 	// Set & Get
 	for {
 
-		err := client.Set("ticker", time.Now().Second(), 0).Err()
-		if err != nil {
+		if err := client.Set("ticker", time.Now().Second(), 0).Err(); err != nil {
 			fmt.Println(err.Error())
 		}
 
