@@ -14,6 +14,30 @@ func main() {
 		DB:       0,                                                // use default DB
 	})
 
+	// Recieve
+	pubsub := client.PSubscribe("pticker")
+	defer pubsub.Close()
+	go func() {
+		for {
+			msg, err := pubsub.ReceiveMessage()
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("recieved %s", msg)
+		}
+	}()
+
+	// Publish
+	go func() {
+		for {
+			if err := client.Publish("pticker", time.Now().Second()).Err(); err != nil {
+				panic(err)
+			}
+			time.Sleep(1 * time.Second)
+		}
+	}()
+
+	// Set & Get
 	for {
 
 		err := client.Set("ticker", time.Now().Second(), 0).Err()
