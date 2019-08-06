@@ -7,19 +7,40 @@ import (
 	"github.com/go-redis/redis"
 )
 
+const (
+	Addr     = "redis-redis-ha.default.svc.cluster.local:26379"
+	Password = ""
+)
+
 func main() {
-	client := redis.NewClient(&redis.Options{
-		Addr:     "redis-redis-ha.default.svc.cluster.local:26379", // connect to sentinel, not directly to redis
-		Password: "",                                               // no password set
-		DB:       0,                                                // use default DB
-	})
+	// Set & Get
+	setClient := newClient()
+	getClient := newClient()
+	for {
+
+		if err := setClient.Set("ticker", time.Now().Second(), 0).Err(); err != nil {
+			fmt.Println(err.Error())
+		}
+
+		val, err := getClient.Get("ticker").Result()
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		fmt.Println("Got: ", val)
+		time.Sleep(1 * time.Second)
+
+	}
 
 	// Recieve
-	pubsub := client.PSubscribe("pticker")
-	defer pubsub.Close()
+	subClient := newClient()
+	pubClient := newClient()
+	topic := "pticker"
+
+	sub := subClient.PSubscribe(topic)
+	defer sub.Close()
 	go func() {
 		for {
-			msg, err := pubsub.ReceiveMessage()
+			msg, err := sub.ReceiveMessage()
 			if err != nil {
 				fmt.Println(err.Error())
 				//panic(err)
@@ -31,27 +52,19 @@ func main() {
 	// Publish
 	go func() {
 		for {
-			if err := client.Publish("pticker", time.Now().Second()).Err(); err != nil {
+			if err := pubClient.Publish(topic, time.Now().Second()).Err(); err != nil {
 				fmt.Println(err.Error())
 				//panic(err)
 			}
 			time.Sleep(1 * time.Second)
 		}
 	}()
+}
 
-	// Set & Get
-	for {
-
-		if err := client.Set("ticker", time.Now().Second(), 0).Err(); err != nil {
-			fmt.Println(err.Error())
-		}
-
-		val, err := client.Get("ticker").Result()
-		if err != nil {
-			fmt.Println(err.Error())
-		}
-		fmt.Println("Got: ", val)
-		time.Sleep(1 * time.Second)
-
-	}
+func newClient() *redis.Client {
+	return redis.NewClient(&redis.Options{
+		Addr:     Addr,     // connect to sentinel, not directly to redis
+		Password: Password, // no password set
+		DB:       0,        // use default DB
+	})
 }
